@@ -8,7 +8,9 @@ const adminAuth = (req, res, next) => {
   const adminAuthToken = req.header("x-admin-auth-token");
 
   if (!adminAuthToken) {
-    return res.status(401).json({ message: "No admin token, authorization denied" });
+    return res
+      .status(401)
+      .json({ message: "No admin token, authorization denied" });
   }
 
   if (adminAuthToken === process.env.ADMIN_AUTH_KEY) {
@@ -90,8 +92,7 @@ OrderRoutes.put("/update/:id", async (req, res) => {
           "delivertAddress.city": req.body.delivertAddress.city,
           "delivertAddress.state": req.body.delivertAddress.state,
           "delivertAddress.zipCode": req.body.delivertAddress.zipCode,
-          contactNumber: req.body.contactNumber,
-          status: req.body.status,
+          contactNumber: req.body.contactNumber
         },
       }
     );
@@ -109,7 +110,31 @@ OrderRoutes.put("/update/:id", async (req, res) => {
   }
 });
 
+// Update an order Status by ID
+OrderRoutes.put("/updateStatus/:id", adminAuth, async (req, res) => {
+  try {
+    const orderId = req.params.id; // Extract order ID from the URL parameter
+    const updatedOrder = await OrderModel.updateOne(
+      { orderId: orderId }, // Use the extracted order ID directly
+      {
+        $set: {
+          status: req.body.status,
+        },
+      }
+    );
 
+    if (!updatedOrder) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    const ordersList = await OrderModel.find();
+    res.status(201).json({ updatedOrder, ordersList });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
 
 // Delete an order by ID
 OrderRoutes.delete("/delete/:id", adminAuth, async (req, res) => {
